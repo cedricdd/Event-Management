@@ -15,7 +15,7 @@ class EventController extends Controller
      */
     public function index()
     {
-        $events = Event::with('organiser', 'attendees.user')->get();
+        $events = Event::with('organiser', 'attendees.user')->latest()->paginate();
 
         return EventResource::collection($events);
     }
