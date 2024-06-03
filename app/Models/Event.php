@@ -11,8 +11,8 @@ class Event extends Model
 
     protected $fillable = ['name', 'description', 'start_time', 'end_time', 'user_id'];
 
-    public function owner() {
-        return $this->belongsTo(User::class);
+    public function organiser() {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function attendees() {
