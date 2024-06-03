@@ -3,19 +3,25 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\EventRequest;
 use App\Http\Resources\EventResource;
 use App\Models\Event;
 use Illuminate\Http\Request;
+use App\Http\Traits\AddRelations;
+
+const ALLOWED_RELATIONS = ["organiser" => "organiser", "attendees" => "attendees.user"];
 
 class EventController extends Controller
 {
+    use AddRelations;
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $events = Event::with('organiser', 'attendees.user')->latest()->paginate();
+        $events = Event::query();
+        $this->addRelations($events, ALLOWED_RELATIONS);
+        $events = $events->latest()->paginate();
 
         return EventResource::collection($events);
     }
@@ -23,14 +29,18 @@ class EventController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): Event
+    public function store(Request $request)
     {
-        return Event::create($request->validate([
+        $event = Event::create($request->validate([
             'name' =>  'required|string|max:255',
             'description' => 'nullable|string',
             'start_time' => 'required|date', 
             'end_time' => 'required|date|after:start_date', 
         ]) + ['user_id' => 1]);
+
+        $this->addRelations($event, ALLOWED_RELATIONS);
+
+        return new EventResource($event);
     }
 
     /**
@@ -38,7 +48,7 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        $event->load('organiser', 'attendees.user');
+        $this->addRelations($event, ALLOWED_RELATIONS);
         
         return new EventResource($event);
     }
@@ -55,7 +65,7 @@ class EventController extends Controller
             'end_time' => 'sometimes|date|after:start_date', 
         ]));
 
-        $event->load('organiser', 'attendees.user');
+        $this->addRelations($event, ALLOWED_RELATIONS);
 
         return new EventResource($event);
     }

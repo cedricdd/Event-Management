@@ -4,18 +4,25 @@ namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AttendeeResource;
+use App\Http\Traits\AddRelations;
 use App\Models\Attendee;
 use App\Models\Event;
 use Illuminate\Http\Request;
 
+const ALLOWED_RELATIONS = ["user" => "user"];
+
 class AttendeeController extends Controller
 {
+    use AddRelations;
+
     /**
      * Display a listing of the resource.
      */
-    public function index(Event $event)
+    public function index(Request $request, Event $event)
     {
-        $attendees = $event->attendees()->with('user')->latest()->paginate();
+        $attendees = $event->attendees();
+        $this->addRelations($attendees, ALLOWED_RELATIONS);
+        $attendees = $attendees->latest()->paginate();
 
         return AttendeeResource::collection($attendees);
     }
@@ -27,7 +34,7 @@ class AttendeeController extends Controller
     {
         $attendee = $event->attendees()->create(['user_id'=> 1]);
 
-        $attendee->load('user');
+        $this->addRelations($attendee, ALLOWED_RELATIONS);
 
         return new AttendeeResource($attendee);
     }
@@ -37,7 +44,7 @@ class AttendeeController extends Controller
      */
     public function show(Event $event, Attendee $attendee)
     {
-        $attendee->load('user');
+        $this->addRelations($attendee, ALLOWED_RELATIONS);
 
         return new AttendeeResource($attendee);
     }
