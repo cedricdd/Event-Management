@@ -9,11 +9,11 @@ use App\Models\Attendee;
 use App\Models\Event;
 use Illuminate\Http\Request;
 
-const ALLOWED_RELATIONS = ["user" => "user"];
-
 class AttendeeController extends Controller
 {
     use AddRelations;
+
+    private array $allowed_relations = ["user" => "user"];
 
     /**
      * Display a listing of the resource.
@@ -21,7 +21,7 @@ class AttendeeController extends Controller
     public function index(Request $request, Event $event)
     {
         $attendees = $event->attendees();
-        $this->addRelations($attendees, ALLOWED_RELATIONS);
+        $this->addRelations($attendees, $this->allowed_relations);
         $attendees = $attendees->latest()->paginate();
 
         return AttendeeResource::collection($attendees);
@@ -34,7 +34,7 @@ class AttendeeController extends Controller
     {
         $attendee = $event->attendees()->create(['user_id'=> 1]);
 
-        $this->addRelations($attendee, ALLOWED_RELATIONS);
+        $this->addRelations($attendee, $this->allowed_relations);
 
         return new AttendeeResource($attendee);
     }
@@ -44,7 +44,7 @@ class AttendeeController extends Controller
      */
     public function show(Event $event, Attendee $attendee)
     {
-        $this->addRelations($attendee, ALLOWED_RELATIONS);
+        $this->addRelations($attendee, $this->allowed_relations);
 
         return new AttendeeResource($attendee);
     }

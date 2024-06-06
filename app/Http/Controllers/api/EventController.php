@@ -7,12 +7,20 @@ use App\Http\Resources\EventResource;
 use App\Models\Event;
 use Illuminate\Http\Request;
 use App\Http\Traits\AddRelations;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-const ALLOWED_RELATIONS = ["organiser" => "organiser", "attendees" => "attendees.user"];
-
-class EventController extends Controller
+class EventController extends Controller implements HasMiddleware
 {
     use AddRelations;
+
+    public static function middleware(): array {
+        return [
+            new Middleware(middleware: 'auth:sanctum', only: ['store', 'update', 'destroy'])
+        ];
+    }
+
+    private array $allowed_relations = ["organiser" => "organiser", "attendees" => "attendees.user"];
 
     /**
      * Display a listing of the resource.
@@ -20,7 +28,7 @@ class EventController extends Controller
     public function index()
     {
         $events = Event::query();
-        $this->addRelations($events, ALLOWED_RELATIONS);
+        $this->addRelations($events, $this->allowed_relations);
         $events = $events->latest()->paginate();
 
         return EventResource::collection($events);
@@ -36,9 +44,9 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'start_time' => 'required|date', 
             'end_time' => 'required|date|after:start_date', 
-        ]) + ['user_id' => 1]);
+        ]) + ['user_id' => $request->user()->id]);
 
-        $this->addRelations($event, ALLOWED_RELATIONS);
+        $this->addRelations($event, $this->allowed_relations);
 
         return new EventResource($event);
     }
@@ -48,7 +56,7 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        $this->addRelations($event, ALLOWED_RELATIONS);
+        $this->addRelations($event, $this->allowed_relations);
         
         return new EventResource($event);
     }
@@ -65,7 +73,7 @@ class EventController extends Controller
             'end_time' => 'sometimes|date|after:start_date', 
         ]));
 
-        $this->addRelations($event, ALLOWED_RELATIONS);
+        $this->addRelations($event, $this->allowed_relations);
 
         return new EventResource($event);
     }
