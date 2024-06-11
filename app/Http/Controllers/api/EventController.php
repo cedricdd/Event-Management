@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Http\Traits\AddRelations;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Gate;
 
 class EventController extends Controller implements HasMiddleware
 {
@@ -66,6 +67,8 @@ class EventController extends Controller implements HasMiddleware
      */
     public function update(Request $request, Event $event)
     {
+        Gate::authorize("update", $event);
+
         $event->update($request->validate([
             'name' =>  'sometimes|string|max:255',
             'description' => 'nullable|string',
@@ -83,6 +86,8 @@ class EventController extends Controller implements HasMiddleware
      */
     public function destroy(Event $event)
     {
+        Gate::authorize("delete", $event);
+
         $event->delete();
 
         return response(status: 204);

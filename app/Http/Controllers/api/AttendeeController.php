@@ -8,12 +8,21 @@ use App\Http\Traits\AddRelations;
 use App\Models\Attendee;
 use App\Models\Event;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Gate;
 
-class AttendeeController extends Controller
+class AttendeeController extends Controller implements HasMiddleware
 {
     use AddRelations;
 
     private array $allowed_relations = ["user" => "user"];
+
+    public static function middleware(): array {
+        return [
+            new Middleware(middleware: "auth:sanctum", only: ['destroy', 'store'])
+        ];
+    }
 
     /**
      * Display a listing of the resource.
@@ -32,7 +41,11 @@ class AttendeeController extends Controller
      */
     public function store(Request $request, Event $event)
     {
-        $attendee = $event->attendees()->create(['user_id'=> 1]);
+        Gate::authorize('store', [Attendee::class, $event]);
+
+        $attendee = $event->attendees()->create(
+            $request->validate(['user_id' => 'required|integer'])
+        );
 
         $this->addRelations($attendee, $this->allowed_relations);
 
@@ -52,8 +65,10 @@ class AttendeeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Event $event, Attendee $attendee)
+    public function destroy(Request $request, Event $event, Attendee $attendee)
     {
+        Gate::authorize('delete', [$attendee, $event]);
+
         $attendee->delete();
 
         return response(status : 204);
